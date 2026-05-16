@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>N6JET 6-Link</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --ink: #1a1a1a;
+    --ink-dim: #6b6b6b;
+    --rule: #e5e5e5;
+    --code-bg: #f0f0f0;
+    --link: #2563eb;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'SF Mono', Menlo, Monaco, Consolas, 'Roboto Mono', 'Courier New', monospace;
+    font-size: 17px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .wrap {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 56px 32px 80px;
+  }
+
+  .logo {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto 40px;
+  }
+
+  h2 {
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink);
+    margin: 48px 0 20px;
+  }
+
+  p {
+    margin: 0 0 20px;
+  }
+
+  code {
+    font-family: inherit;
+    font-size: 0.92em;
+    background: var(--code-bg);
+    padding: 2px 7px;
+    border-radius: 2px;
+  }
+
+  .endpoints {
+    border: 1px solid var(--rule);
+    margin: 16px 0 8px;
+  }
+
+  .endpoint {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 24px;
+    padding: 16px 28px;
+    align-items: baseline;
+    border-bottom: 1px solid var(--rule);
+  }
+  .endpoint:last-child { border-bottom: none; }
+
+  .endpoint .mode {
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .endpoint .target {
+    color: var(--ink-dim);
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid var(--rule);
+    margin: 56px 0 24px;
+  }
+
+  a {
+    color: var(--link);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  a:hover {
+    text-decoration: none;
+  }
+
+  @media (max-width: 560px) {
+    body { font-size: 15px; }
+    .wrap { padding: 36px 20px 60px; }
+    .endpoint {
+      grid-template-columns: 90px 1fr;
+      padding: 14px 18px;
+      gap: 16px;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+
+    <img src="n6jet-6link-logo.png"
+         alt="N6JET 6-Link — concentric rings labeled TGIF 95110, XLXJET-Q (D-STAR), YSF 95110, NXDN 9511, M17-JETQ, P25 9511"
+         class="logo">
+
+    <p>
+      A digital voice bridge that connects six amateur radio digital modes — DMR, YSF, NXDN, P25, M17, and D-STAR — so a transmission on any one mode is heard simultaneously on all the others.
+    </p>
+
+    <h2>How it works</h2>
+    <p>
+      Each mode has its own protocol bridge running on a Hetzner VPS that converts the mode's native audio into a common PCM stream over USRP. A central fanout script (usrp-fanout.py) then forwards that PCM to every other leg, where it gets re-encoded into the appropriate digital mode and transmitted out.
+    </p>
+    <p>
+      The result: a single key-up reaches everyone on all six modes at once — effectively merging the otherwise fragmented digital voice ecosystems into one shared conversation.
+    </p>
+
+    <h2>How to connect</h2>
+    <p>Point your hotspot or repeater at the appropriate endpoint for your mode:</p>
+
+    <div class="endpoints">
+      <div class="endpoint"><span class="mode">DMR</span><span class="target">TGIF talkgroup 95110</span></div>
+      <div class="endpoint"><span class="mode">YSF</span><span class="target">Reflector 95110</span></div>
+      <div class="endpoint"><span class="mode">NXDN</span><span class="target">Reflector 9511</span></div>
+      <div class="endpoint"><span class="mode">P25</span><span class="target">Reflector 9511</span></div>
+      <div class="endpoint"><span class="mode">M17</span><span class="target">M17-JET, module Q</span></div>
+      <div class="endpoint"><span class="mode">D-STAR</span><span class="target">XLXJET, module Q (via DPlus / DExtra / DCS / MMDVM)</span></div>
+    </div>
+
+    <h2>Architecture</h2>
+    <img src="n6jet_6link_architecture.jpg"
+         alt="N6JET 6-Link architecture diagram — six reflectors on one VPS bridged through a USRP fan-out Python relay"
+         class="logo">
+    <p>
+      The N6JET 6-Link runs on a Hetzner VPS (Ubuntu 24.04) and bridges six independent digital voice networks into a unified audio domain. Each leg — TGIF DMR (TG 95110), YSF (95110), NXDN (9511), P25 (9511), M17JET module Q, and XLXJET module Q for D-STAR — runs as its own reflector or gateway service paired with a bridge process (Analog_Bridge / MMDVM_Bridge for the four mode-specific legs, USRP-native handoffs for M17 and XLX) that converts the native protocol into and out of USRP audio frames. All six bridge pairs connect over the loopback interface to a central Python relay (the USRP fan-out, usrp-fanout.py), which receives audio from any one leg and re-broadcasts it to the other five. The entire stack runs as systemd services on a single host, so there are no external network hops between legs — only the user-to-reflector path traverses the public internet. AMBE transcoding for the legs that need it is handled by an on-host ambed instance.
+    </p>
+
+    <hr>
+
+    <a href="https://www.n6jet.com/index.html">← Back to N6JET</a>
+
+  </div>
+</body>
+</html>
